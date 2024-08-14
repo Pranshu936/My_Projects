@@ -1,64 +1,70 @@
-import java.io.*;
+import java.sql.*;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
 /**
  * Student Management System (PUMIS: Personalized University Management
  * Information System)
- * This program manages student records using a CSV file and maintains a unique
- * ID counter.
+ * This program manages student records using a MySQL database.
  */
 public class PUMIS {
     private static int idcounter; // Counter to generate unique student IDs
-    private static final String FILENAME = "students.csv"; // File to store student data
-    private static final String ID_FILE = "last_used_id.txt"; // File to store last used ID
     private static Scanner scanner = new Scanner(System.in);
+    private static Connection connection;
 
     public static void main(String[] args) {
-        // Initialize idcounter from file or start from 1001 if file doesn't exist
-        initializeIDCounter();
+        try {
+            // Initialize MySQL connection
+            initializeDatabase();
 
-        boolean exit = false;
+            // Initialize idcounter from database or start from 1001 if table is empty
+            initializeIDCounter();
 
-        while (!exit) {
-            // Display menu options
-            System.out.println("\nStudent Management System Menu:");
-            System.out.println("1. Add Student");
-            System.out.println("2. Display All Students");
-            System.out.println("3. Search Student by ID");
-            System.out.println("4. Update Student Information");
-            System.out.println("5. Delete Student by ID");
-            System.out.println("6. Exit");
-            System.out.print("Enter your choice: ");
+            boolean exit = false;
 
-            int choice = getIntInput(); // Read user choice
+            while (!exit) {
+                // Display menu options
+                System.out.println("\nStudent Management System Menu:");
+                System.out.println("1. Add Student");
+                System.out.println("2. Display All Students");
+                System.out.println("3. Search Student by ID");
+                System.out.println("4. Update Student Information");
+                System.out.println("5. Delete Student by ID");
+                System.out.println("6. Exit");
+                System.out.print("Enter your choice: ");
 
-            switch (choice) {
-                case 1:
-                    addStudent();
-                    break;
-                case 2:
-                    displayAllStudents();
-                    break;
-                case 3:
-                    searchStudentByID();
-                    break;
-                case 4:
-                    updateStudent();
-                    break;
-                case 5:
-                    deleteStudentByID();
-                    break;
-                case 6:
-                    exit = true;
-                    System.out.println("Exiting... Thank you!");
-                    break;
-                default:
-                    System.out.println("Invalid choice. Please enter a number between 1 and 6.");
+                int choice = getIntInput(); // Read user choice
+
+                switch (choice) {
+                    case 1:
+                        addStudent();
+                        break;
+                    case 2:
+                        displayAllStudents();
+                        break;
+                    case 3:
+                        searchStudentByID();
+                        break;
+                    case 4:
+                        updateStudent();
+                        break;
+                    case 5:
+                        deleteStudentByID();
+                        break;
+                    case 6:
+                        exit = true;
+                        System.out.println("Exiting... Thank you!");
+                        break;
+                    default:
+                        System.out.println("Invalid choice. Please enter a number between 1 and 6.");
+                }
             }
+        } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
+        } finally {
+            scanner.close(); // Close the scanner object
+            closeDatabaseConnection(); // Close the database connection
         }
-
-        scanner.close(); // Close the scanner object
     }
 
     // Utility method to get integer input from user
@@ -75,56 +81,81 @@ public class PUMIS {
         }
     }
 
-    // Initialize idcounter from file or start from 1001 if file doesn't exist
-    private static void initializeIDCounter() {
-        try (BufferedReader reader = new BufferedReader(new FileReader(ID_FILE))) {
-            String lastID = reader.readLine();
-            if (lastID != null && !lastID.isEmpty()) {
-                idcounter = Integer.parseInt(lastID);
-            } else {
-                idcounter = 1001; // Default starting ID
-            }
-        } catch (IOException | NumberFormatException e) {
-            System.err.println("Error initializing ID counter: " + e.getMessage());
-            idcounter = 1001; // Default starting ID
+    // Initialize MySQL database connection
+    private static void initializeDatabase() throws SQLException {
+        String url = "jdbc:mysql://localhost:3306/[Database_name]";
+        String user = "root";
+        String password = "[Password]";
+        connection = DriverManager.getConnection(url, user, password);
+
+        try (Statement stmt = connection.createStatement()) {
+            // Create students table if it doesn't exist
+            String createTableSQL = "CREATE TABLE IF NOT EXISTS students ("
+                    + "id INT PRIMARY KEY, "
+                    + "name VARCHAR(255) NOT NULL, "
+                    + "age INT, "
+                    + "Gender VARCHAR(255),"
+                    + "email VARCHAR(255), "
+                    + "course VARCHAR(255), "
+                    + "year_of_study INT)";
+            stmt.execute(createTableSQL);
         }
     }
 
-    // Method to store the last used ID back to the file
-    private static void storeLastUsedID() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(ID_FILE))) {
-            writer.write(String.valueOf(idcounter));
-        } catch (IOException e) {
-            System.err.println("Error storing last used ID: " + e.getMessage());
+    // Initialize idcounter from database or start from 1001 if table is empty
+    private static void initializeIDCounter() throws SQLException {
+        String query = "SELECT MAX(id) FROM students";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            if (rs.next() && rs.getInt(1) > 0) {
+                idcounter = rs.getInt(1) + 1;
+            } else {
+                idcounter = 1001; // Default starting ID
+            }
         }
     }
 
     // Method to add a new student
-    private static void addStudent() {
+    private static void addStudent() throws SQLException {
         int id = idcounter++;
 
-        String name;
-        boolean validInput = false;
-        while (!validInput) {
-            System.out.print("Enter student name: ");
-            name = scanner.nextLine().trim(); // Read and trim input
+        System.out.print("Enter student name: ");
+        String name = scanner.nextLine().trim(); // Read and trim input
 
-            // Validate the input
-            if (isValidName(name)) {
-                try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME, true))) {
-                    writer.write(id + "," + name + "\n");
-                    System.out.println("Student added successfully.");
-                    validInput = true;
-                } catch (IOException e) {
-                    System.err.println("Error writing to file: " + e.getMessage());
-                }
-            } else {
-                System.out.println("Invalid name. Please enter a valid name (only alphabetic characters).");
+        System.out.print("Enter student age: ");
+        int age = getIntInput(); // Get student age from user input
+
+        System.out.print("Enter student gender: ");
+        String gender = scanner.nextLine().trim(); // Get student gender from user input
+
+        System.out.print("Enter student email: ");
+        String email = scanner.nextLine().trim(); // Get student email from user input
+
+        System.out.print("Enter student course: ");
+        String course = scanner.nextLine().trim(); // Get student course from user input
+
+        System.out.print("Enter year of study: ");
+        int yearOfStudy = getIntInput(); // Get year of study from user input
+
+        // Validate the input
+        if (isValidName(name) && isValidEmail(email)) {
+            String insertSQL = "INSERT INTO students (id, name, age,gender, email, course, year_of_study) VALUES (?, ?, ?, ?, ?, ?,?)";
+            try (PreparedStatement pstmt = connection.prepareStatement(insertSQL)) {
+                pstmt.setInt(1, id);
+                pstmt.setString(2, name);
+                pstmt.setInt(3, age);
+                pstmt.setString(4,gender);
+                pstmt.setString(5, email);
+                pstmt.setString(6, course);
+                pstmt.setInt(7, yearOfStudy);
+                pstmt.executeUpdate();
+                System.out.println("Student added successfully.");
+            } catch (SQLException e) {
+                System.err.println("Error inserting into database: " + e.getMessage());
             }
+        } else {
+            System.out.println("Invalid input. Please enter valid information.");
         }
-
-        // Update the last used ID after adding a student
-        storeLastUsedID();
     }
 
     // Method to validate if a name contains only alphabetic characters
@@ -133,155 +164,133 @@ public class PUMIS {
         return name.matches("[a-zA-Z ]+");
     }
 
+    // Method to validate email
+    private static boolean isValidEmail(String email) {
+        // Simple regex for email validation
+        return email.matches("^[A-Za-z0-9+_.-]+@(.+)$");
+    }
+
     // Method to display all students
-    private static void displayAllStudents() {
-        try (BufferedReader reader = new BufferedReader(new FileReader(FILENAME))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length == 2) {
-                    int id = Integer.parseInt(parts[0]);
-                    String name = parts[1];
-                    System.out.println("ID: " + id + ", Name: " + name);
-                }
+    private static void displayAllStudents() throws SQLException {
+        String query = "SELECT * FROM students";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                int age = rs.getInt("age");
+                String gender = rs.getString("gender");
+                String email = rs.getString("email");
+                String course = rs.getString("course");
+                int yearOfStudy = rs.getInt("year_of_study");
+                System.out.printf("ID: %-5d | Name: %-10s | Age: %-3d | Gender: %-6s | Email: %-25s | Course: %-100s | Year of Study: %-2d%n", 
+    id, name, age, gender, email, course, yearOfStudy);
             }
-        } catch (IOException | NumberFormatException e) {
-            System.err.println("Error reading from file: " + e.getMessage());
         }
     }
 
     // Method to search for a student by ID
-    private static void searchStudentByID() {
+    private static void searchStudentByID() throws SQLException {
         System.out.print("Enter student ID to search: ");
         int id = getIntInput(); // Get student ID from user input
 
-        boolean found = false;
-        try (BufferedReader reader = new BufferedReader(new FileReader(FILENAME))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length == 2 && Integer.parseInt(parts[0]) == id) {
-                    String name = parts[1];
-                    System.out.println("Student found:");
-                    System.out.println("ID: " + id + ", Name: " + name);
-                    found = true;
-                    break;
+        String query = "SELECT * FROM students WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setInt(1, id);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                String name = rs.getString("name");
+                int age = rs.getInt("age");
+                String gender = rs.getString("gender");
+                String email = rs.getString("email");
+                String course = rs.getString("course");
+                int yearOfStudy = rs.getInt("year_of_study");
+                System.out.println("ID: " + id + ", Name: " + name + ", Age: " + age + ",Gender:"+ gender+", Email: " + email + ", Course: " + course + ", Year of Study: " + yearOfStudy);
+
+                } else {
+                    System.out.println("Student not found with ID: " + id);
                 }
             }
-            if (!found) {
-                System.out.println("Student not found with ID: " + id);
-            }
-        } catch (IOException | NumberFormatException e) {
-            System.err.println("Error reading from file: " + e.getMessage());
         }
     }
 
     // Method to update student information
-    private static void updateStudent() {
+    private static void updateStudent() throws SQLException {
         System.out.print("Enter student ID to update: ");
         int id = getIntInput(); // Get student ID from user input
 
-        boolean found = false;
-        try (BufferedReader reader = new BufferedReader(new FileReader(FILENAME));
-                BufferedWriter writer = new BufferedWriter(new FileWriter("students_temp.csv"))) {
+        System.out.print("Enter new name for student: ");
+        String newName = scanner.nextLine().trim(); // Get new name from user input
 
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length == 2 && Integer.parseInt(parts[0]) == id) {
-                    System.out.print("Enter new name for student: ");
-                    String newName = scanner.nextLine().trim(); // Get new name from user input
+        System.out.print("Enter new age for student: ");
+        int newAge = getIntInput(); // Get new age from user input
 
-                    // Validate the input
-                    if (isValidName(newName)) {
-                        writer.write(id + "," + newName + "\n");
-                        System.out.println("Student information updated successfully.");
-                        found = true;
-                    } else {
-                        System.out.println("Invalid name. Please enter a valid name (only alphabetic characters).");
-                        writer.write(line + "\n"); // Keep the original line in the temp file
-                    }
+        System.out.print("Enter new gender for student: ");
+        String newGender = scanner.nextLine().trim(); // Get new gender from user input
+
+        System.out.print("Enter new email for student: ");
+        String newEmail = scanner.nextLine().trim(); // Get new email from user input
+
+        System.out.print("Enter new course for student: ");
+        String newCourse = scanner.nextLine().trim(); // Get new course from user input
+
+        System.out.print("Enter new year of study for student: ");
+        int newYearOfStudy = getIntInput(); // Get new year of study from user input
+
+        // Validate the input
+        if (isValidName(newName) && isValidEmail(newEmail)) {
+            String updateSQL = "UPDATE students SET name = ?, age = ?, gender = ?, email = ?, course = ?, year_of_study = ? WHERE id = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(updateSQL)) {
+                pstmt.setString(1, newName);
+                pstmt.setInt(2, newAge);
+                pstmt.setString(3, newGender);
+                pstmt.setString(4, newEmail);
+                pstmt.setString(5, newCourse);
+                pstmt.setInt(6, newYearOfStudy);
+                pstmt.setInt(7, id);
+
+                // Update student information
+                int rowsAffected = pstmt.executeUpdate();
+                if (rowsAffected > 0) {
+                    System.out.println("Student information updated successfully.");
                 } else {
-                    writer.write(line + "\n");
+                    System.out.println("Student not found with ID: " + id);
                 }
+            } catch (SQLException e) {
+                System.err.println("Error updating student: " + e.getMessage());
             }
-        } catch (IOException | NumberFormatException e) {
-            System.err.println("Error updating student information: " + e.getMessage());
-            return; // Exit method on error
+        } else {
+            System.out.println("Invalid input. Please enter valid information.");
         }
-
-        if (!found) {
-            System.out.println("Student not found with ID: " + id);
-            return; // Exit method if student not found
-        }
-
-        // Replace original students.csv with students_temp.csv
-        try {
-            File originalFile = new File(FILENAME);
-            File tempFile = new File("students_temp.csv");
-
-            if (originalFile.delete()) { // Delete original students.csv
-                if (tempFile.renameTo(originalFile)) {
-                    System.out.println("File renamed successfully.");
-                } else {
-                    System.err.println("Failed to rename file.");
-                }
-            } else {
-                System.err.println("Failed to delete original file.");
-            }
-        } catch (Exception e) {
-            System.err.println("Error renaming file: " + e.getMessage());
-        }
-
-        // Update the last used ID after updating a student
-        storeLastUsedID();
     }
 
     // Method to delete a student by ID
-    private static void deleteStudentByID() {
+    private static void deleteStudentByID() throws SQLException {
         System.out.print("Enter student ID to delete: ");
         int id = getIntInput(); // Get student ID from user input
 
-        boolean found = false;
-        try (BufferedReader reader = new BufferedReader(new FileReader(FILENAME));
-                BufferedWriter writer = new BufferedWriter(new FileWriter("students_temp.csv"))) {
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length == 2 && Integer.parseInt(parts[0]) == id) {
-                    System.out.println("Student deleted successfully.");
-                    found = true;
-                } else {
-                    writer.write(line + "\n");
-                }
-            }
-        } catch (IOException | NumberFormatException e) {
-            System.err.println("Error deleting student: " + e.getMessage());
-            return; // Exit method on error
-        }
-
-        if (!found) {
-            System.out.println("Student not found with ID: " + id);
-            return; // Exit method if student not found
-        }
-
-        // Replace original students.csv with students_temp.csv
-        try {
-            File originalFile = new File(FILENAME);
-            File tempFile = new File("students_temp.csv");
-
-            if (originalFile.delete()) { // Delete original students.csv
-                if (tempFile.renameTo(originalFile)) {
-                    System.out.println("File renamed successfully.");
-                } else {
-                    System.err.println("Failed to rename file.");
-                }
+        String deleteSQL = "DELETE FROM students WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(deleteSQL)) {
+            pstmt.setInt(1, id);
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Student deleted successfully.");
             } else {
-                System.err.println("Failed to delete original file.");
+                System.out.println("Student not found with ID: " + id);
             }
-        } catch (Exception e) {
-            System.err.println("Error renaming file: " + e.getMessage());
+        } catch (SQLException e) {
+            System.err.println("Error deleting student: " + e.getMessage());
+        }
+    }
+
+    // Close the database connection
+    private static void closeDatabaseConnection() {
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                System.err.println("Error closing database connection: " + e.getMessage());
+            }
         }
     }
 }
