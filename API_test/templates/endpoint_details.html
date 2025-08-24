@@ -1,0 +1,494 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    {{ endpoint.name }} - API Monitor
+{% endblock %}
+
+{% block content %}
+<style>
+    /* --- Page-Specific Styles for Endpoint Details --- */
+    .details-header { 
+        display: flex; 
+        flex-wrap: wrap; 
+        justify-content: space-between; 
+        align-items: center; 
+        gap: 1rem; 
+        margin-bottom: 2rem;
+        /* Added glass morphism and animation */
+        background: rgba(255, 255, 255, 0.03);
+        padding: 2rem;
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: slideInDown 0.6s ease-out;
+    }
+    .details-header h1 { 
+        font-size: 2rem; 
+        font-weight: 700;
+        /* Added gradient text effect */
+        background: linear-gradient(135deg, var(--primary-color), var(--success-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: textGlow 3s ease-in-out infinite alternate;
+    }
+    .header-actions { 
+        display: flex; 
+        gap: 1rem;
+        /* Added staggered animation */
+        animation: slideInRight 0.6s ease-out 0.2s both;
+    }
+    .btn-danger { 
+        background: linear-gradient(135deg, var(--danger-color), #dc2626); 
+        color: white;
+        /* Added enhanced button effects */
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .btn-danger::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .btn-danger:hover::before {
+        left: 100%;
+    }
+
+    .endpoint-info { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+        gap: 1.5rem; 
+        background: rgba(255, 255, 255, 0.03);
+        padding: 1.5rem; 
+        border-radius: 16px; 
+        margin-bottom: 2rem;
+        /* Added glass morphism and animation */
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        animation: slideInUp 0.8s ease-out 0.4s both;
+    }
+    .info-item { 
+        font-size: 0.95rem;
+        /* Added hover effects */
+        transition: all 0.3s ease;
+        padding: 1rem;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .info-item:hover {
+        transform: translateY(-5px);
+        background: rgba(255, 255, 255, 0.05);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-item strong { 
+        display: block; 
+        color: var(--text-secondary-color); 
+        font-weight: 600; 
+        margin-bottom: 0.25rem;
+        /* Added subtle glow */
+        text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+    }
+    .info-item code { 
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        padding: 0.4rem 0.8rem; 
+        border-radius: 8px; 
+        font-family: monospace; 
+        word-break: break-all;
+        /* Added glow effect */
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .info-item code:hover {
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        transform: scale(1.02);
+    }
+
+    .history-list { 
+        list-style: none; 
+        padding: 0;
+        /* Added container styling */
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+    }
+    .history-item { 
+        display: grid; 
+        grid-template-columns: auto 1fr auto; 
+        align-items: center; 
+        gap: 1.5rem; 
+        padding: 1.25rem; 
+        border-bottom: 1px solid var(--border-color); 
+        animation: fadeInRow 0.6s ease-out forwards; 
+        opacity: 0;
+        /* Added 3D hover effects */
+        transition: all 0.3s ease;
+        transform-style: preserve-3d;
+    }
+    .history-item:last-child { border-bottom: none; }
+
+    .history-item:hover {
+        background: rgba(59, 130, 246, 0.05);
+        transform: translateZ(10px) rotateX(2deg);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    @keyframes fadeInRow { 
+        from { opacity: 0; transform: translateY(20px) rotateX(-10deg); } 
+        to { opacity: 1; transform: translateY(0) rotateX(0deg); } 
+    }
+    .history-status { 
+        width: 40px; 
+        height: 40px; 
+        border-radius: 50%; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        flex-shrink: 0;
+        /* Added 3D effects and animation */
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        animation: statusPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes statusPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .history-status:hover {
+        transform: scale(1.1) rotateY(180deg);
+    }
+
+    .history-status-success { 
+        background: linear-gradient(135deg, var(--success-bg-color), rgba(16, 185, 129, 0.2)); 
+        color: var(--success-color);
+        border: 2px solid var(--success-color);
+    }
+    .history-status-fail { 
+        background: linear-gradient(135deg, var(--danger-bg-color), rgba(239, 68, 68, 0.2)); 
+        color: var(--danger-color);
+        border: 2px solid var(--danger-color);
+    }
+    .history-status svg { 
+        width: 20px; 
+        height: 20px;
+        /* Added animation */
+        transition: all 0.3s ease;
+    }
+
+    .history-status:hover svg {
+        transform: scale(1.2);
+    }
+
+    .history-details { 
+        flex-grow: 1;
+        /* Added animation */
+        transition: all 0.3s ease;
+    }
+
+    .history-item:hover .history-details {
+        transform: translateX(10px);
+    }
+
+    .history-details p { margin: 0; }
+    .history-details strong { 
+        font-weight: 600;
+        /* Added gradient text */
+        background: linear-gradient(135deg, var(--text-color), var(--primary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .history-details small { 
+        color: var(--text-secondary-color);
+        /* Added subtle animation */
+        animation: fadeIn 0.6s ease-out 0.3s both;
+    }
+    .history-actions { 
+        flex-shrink: 0;
+        /* Added animation */
+        transition: all 0.3s ease;
+    }
+
+    .history-item:hover .history-actions {
+        transform: translateX(-5px);
+    }
+
+    .btn-secondary { 
+        background: rgba(255, 255, 255, 0.05); 
+        border: 1px solid var(--border-color); 
+        color: var(--text-color); 
+        font-size: 0.875rem; 
+        padding: 0.5rem 1rem;
+        /* Added glass morphism and 3D effects */
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        transform-style: preserve-3d;
+    }
+
+    .btn-secondary::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .btn-secondary:hover { 
+        background: rgba(255, 255, 255, 0.08);
+        transform: translateZ(5px) rotateY(5deg);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-secondary:hover::before {
+        left: 100%;
+    }
+    
+    /* --- Modal for JSON Response --- */
+    .modal-overlay { 
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 100%; 
+        background: rgba(0, 0, 0, 0.8);
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        z-index: 1000; 
+        opacity: 0; 
+        visibility: hidden; 
+        transition: all 0.3s ease;
+        /* Added backdrop blur */
+        backdrop-filter: blur(10px);
+    }
+    .modal-overlay.active { 
+        opacity: 1; 
+        visibility: visible; 
+    }
+    .modal-content { 
+        background: rgba(22, 27, 34, 0.95);
+        padding: 2rem; 
+        border-radius: 20px; 
+        width: 90%; 
+        max-width: 700px; 
+        max-height: 80vh; 
+        overflow-y: auto; 
+        transform: scale(0.8) rotateX(-10deg); 
+        transition: all 0.3s ease;
+        /* Enhanced glass morphism */
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+    }
+    .modal-overlay.active .modal-content { 
+        transform: scale(1) rotateX(0deg); 
+    }
+    .modal-header { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        border-bottom: 1px solid var(--border-color); 
+        padding-bottom: 1rem; 
+        margin-bottom: 1rem;
+        /* Added animation */
+        animation: slideInDown 0.4s ease-out 0.2s both;
+    }
+    .modal-header h2 { 
+        font-size: 1.5rem;
+        /* Added gradient text */
+        background: linear-gradient(135deg, var(--primary-color), var(--success-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .modal-close { 
+        background: none; 
+        border: none; 
+        font-size: 1.5rem; 
+        cursor: pointer; 
+        color: var(--text-secondary-color);
+        /* Added hover effects */
+        transition: all 0.3s ease;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-close:hover {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--danger-color);
+        transform: rotate(90deg) scale(1.1);
+    }
+
+    #json-response-body { 
+        background: rgba(13, 17, 23, 0.8);
+        border: 1px solid var(--border-color); 
+        border-radius: 12px; 
+        padding: 1.5rem; 
+        font-family: monospace; 
+        white-space: pre-wrap; 
+        word-break: break-all; 
+        max-height: 50vh; 
+        overflow-y: auto;
+        /* Added syntax highlighting effect */
+        color: #c9d1d9;
+        line-height: 1.6;
+        animation: fadeIn 0.6s ease-out 0.4s both;
+        box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+</style>
+
+<div class="details-header animate-on-scroll">
+    <h1>{{ endpoint.name }}</h1>
+    <div class="header-actions">
+        <form action="{{ url_for('delete_endpoint', endpoint_id=endpoint.id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this endpoint and all its history?');">
+            <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+        <form action="{{ url_for('test_endpoint', endpoint_id=endpoint.id) }}" method="post">
+            <button type="submit" class="btn btn-primary">Run Test Now</button>
+        </form>
+    </div>
+</div>
+
+<div class="endpoint-info animate-on-scroll">
+    <div class="info-item"><strong>URL</strong> <code>{{ endpoint['url'] }}</code></div>
+    <div class="info-item"><strong>Method</strong> <code>{{ endpoint['method'] }}</code></div>
+    <div class="info-item"><strong>Expected Status</strong> <code>{{ endpoint['expected_status'] }}</code></div>
+</div>
+
+<h2 style="margin-bottom: 1.5rem; background: linear-gradient(135deg, var(--text-color), var(--primary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: fadeIn 0.8s ease-out 0.6s both;">Test History</h2>
+{% if history %}
+<ul class="history-list animate-on-scroll">
+    {% for item in history %}
+    <li class="history-item">
+        <div class="history-status {% if item['is_success'] %}history-status-success{% else %}history-status-fail{% endif %}">
+            {% if item['is_success'] %}
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+            {% else %}
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            {% endif %}
+        </div>
+        <div class="history-details">
+            <p>
+                <strong>{% if item['is_success'] %}Success{% else %}Failure{% endif %}</strong>
+                - Status: <code>{{ item['status_code'] or 'N/A' }}</code>
+                - Response Time: <code>{{ item['response_time'] }}ms</code>
+            </p>
+            <small>{{ item['checked_at'] }}</small>
+        </div>
+        <div class="history-actions">
+            {% if item['is_success'] and item['response_body'] %}
+            <button class="btn btn-secondary view-response-btn" data-response="{{ item['response_body'] }}">View Response</button>
+            {% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p style="text-align: center; padding: 2rem; color: var(--text-secondary-color); animation: fadeIn 1s ease-out 0.8s both;">No test history found. Run a test to see the results.</p>
+{% endif %}
+
+<div class="modal-overlay" id="response-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>API Response</h2>
+            <button class="modal-close" id="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <pre id="json-response-body"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Staggered animation for history items
+    const historyItems = document.querySelectorAll('.history-item');
+    historyItems.forEach((item, index) => {
+        item.style.animationDelay = `${index * 0.1}s`;
+    });
+
+    // Modal logic for viewing JSON response
+    const modal = document.getElementById('response-modal');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const jsonResponseBodyEl = document.getElementById('json-response-body');
+    const viewResponseBtns = document.querySelectorAll('.view-response-btn');
+
+    const openModal = () => {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    };
+    
+    const closeModal = () => {
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    };
+
+    modalCloseBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    viewResponseBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            let responseText = btn.dataset.response;
+            try {
+                // Prettify the JSON for better readability
+                const parsedJson = JSON.parse(responseText);
+                jsonResponseBodyEl.textContent = JSON.stringify(parsedJson, null, 2);
+            } catch (error) {
+                // If it's not JSON, just show the raw text
+                jsonResponseBodyEl.textContent = responseText;
+            }
+            openModal();
+        });
+    });
+
+    historyItems.forEach(item => {
+        item.addEventListener('mouseenter', () => {
+            item.style.transform = 'translateZ(15px) rotateX(3deg)';
+            item.style.boxShadow = '0 15px 30px rgba(0, 0, 0, 0.2)';
+        });
+        
+        item.addEventListener('mouseleave', () => {
+            item.style.transform = 'translateZ(0) rotateX(0deg)';
+            item.style.boxShadow = 'none';
+        });
+    });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,393 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Dashboard - API Monitor
+{% endblock %}
+
+{% block content %}
+<style>
+    /* --- Page-Specific Styles for Dashboard --- */
+    .dashboard-header { 
+        margin-bottom: 2rem;
+        /* Added animation and glass effect */
+        animation: slideInDown 0.6s ease-out;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 2rem;
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .dashboard-header h1 { 
+        font-size: 2.25rem; 
+        font-weight: 700; 
+        margin-bottom: 0.5rem;
+        /* Added gradient text effect */
+        background: linear-gradient(135deg, var(--primary-color), var(--success-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: textGlow 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes textGlow {
+        from { filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.3)); }
+        to { filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.6)); }
+    }
+
+    .dashboard-header p { 
+        font-size: 1.125rem; 
+        color: var(--text-secondary-color);
+        animation: fadeIn 0.8s ease-out 0.3s both;
+    }
+    
+    .table-container { 
+        overflow-x: auto;
+        /* Added 3D perspective and enhanced styling */
+        perspective: 1000px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        animation: slideInUp 0.8s ease-out 0.4s both;
+    }
+    
+    .endpoints-table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        text-align: left;
+        /* Added 3D transform */
+        transform-style: preserve-3d;
+    }
+    
+    .endpoints-table th, .endpoints-table td { 
+        padding: 1rem 1.25rem; 
+        border-bottom: 1px solid var(--border-color);
+        /* Added transition for smooth hover effects */
+        transition: all 0.3s ease;
+    }
+    
+    .endpoints-table th { 
+        font-weight: 600; 
+        font-size: 0.875rem; 
+        text-transform: uppercase; 
+        letter-spacing: 0.05em; 
+        color: var(--text-secondary-color);
+        /* Added gradient background and glow */
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1));
+        position: relative;
+        overflow: hidden;
+    }
+
+    .endpoints-table th::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .endpoints-table th:hover::before {
+        left: 100%;
+    }
+    
+    .endpoints-table tbody tr { 
+        transition: all 0.3s ease; 
+        animation: fadeInRow 0.6s ease-out forwards; 
+        opacity: 0;
+        /* Added 3D hover effect */
+        transform-style: preserve-3d;
+    }
+    
+    .endpoints-table tbody tr:hover { 
+        background: rgba(59, 130, 246, 0.05);
+        /* Enhanced 3D hover effect */
+        transform: translateZ(10px) rotateX(2deg);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .endpoints-table tbody tr:hover td {
+        transform: translateZ(5px);
+    }
+    
+    @keyframes fadeInRow { 
+        from { opacity: 0; transform: translateY(20px) rotateX(-10deg); } 
+        to { opacity: 1; transform: translateY(0) rotateX(0deg); } 
+    }
+    
+    .status-indicator { 
+        display: flex; 
+        align-items: center; 
+        gap: 0.5rem; 
+        font-weight: 500;
+        /* Added pulse animation */
+        animation: statusPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes statusPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+    }
+    
+    .status-dot { 
+        width: 12px; 
+        height: 12px; 
+        border-radius: 50%;
+        /* Added glowing effect */
+        box-shadow: 0 0 10px currentColor;
+        animation: dotGlow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes dotGlow {
+        from { box-shadow: 0 0 5px currentColor; }
+        to { box-shadow: 0 0 15px currentColor; }
+    }
+    
+    .status-success { 
+        color: var(--success-color); 
+        background-color: var(--success-bg-color); 
+        padding: 0.25rem 0.75rem; 
+        border-radius: 9999px;
+        /* Added glass morphism */
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .status-success .status-dot { background-color: var(--success-color); }
+    
+    .status-fail { 
+        color: var(--danger-color); 
+        background-color: var(--danger-bg-color); 
+        padding: 0.25rem 0.75rem; 
+        border-radius: 9999px;
+        /* Added glass morphism */
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .status-fail .status-dot { background-color: var(--danger-color); }
+    
+    .status-unknown { 
+        color: var(--text-secondary-color);
+        /* Added subtle styling */
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        background: rgba(128, 128, 128, 0.1);
+        backdrop-filter: blur(10px);
+    }
+    .status-unknown .status-dot { background-color: var(--text-secondary-color); }
+    
+    .method-tag { 
+        font-family: monospace; 
+        font-weight: 700; 
+        padding: 0.2rem 0.5rem; 
+        border-radius: 6px; 
+        font-size: 0.9em;
+        /* Added 3D effect and animation */
+        transform-style: preserve-3d;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .method-tag::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.6s ease;
+    }
+
+    .method-tag:hover {
+        transform: translateZ(5px) rotateY(5deg);
+    }
+
+    .method-tag:hover::before {
+        transform: translateX(100%);
+    }
+    
+    .method-GET { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .method-POST { background-color: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .method-PUT { background-color: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .method-DELETE { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .method-PATCH { background-color: rgba(168, 85, 247, 0.2); color: #c084fc; }
+    
+    .endpoint-link { 
+        color: var(--text-color); 
+        text-decoration: none; 
+        font-weight: 600; 
+        transition: all 0.3s ease;
+        /* Added hover effects */
+        position: relative;
+        display: inline-block;
+    }
+
+    .endpoint-link::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+        transition: width 0.3s ease;
+    }
+    
+    .endpoint-link:hover { 
+        color: var(--primary-color);
+        transform: translateY(-2px);
+    }
+
+    .endpoint-link:hover::after {
+        width: 100%;
+    }
+    
+    .empty-state { 
+        text-align: center; 
+        padding: 4rem 2rem; 
+        border: 2px dashed var(--border-color); 
+        border-radius: 12px;
+        /* Added enhanced styling and animation */
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(10px);
+        animation: float 6s ease-in-out infinite;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .empty-state::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.05), transparent);
+        animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    .empty-state h2 { 
+        font-size: 1.5rem; 
+        margin-bottom: 0.5rem;
+        /* Added gradient text */
+        background: linear-gradient(135deg, var(--text-color), var(--text-secondary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .empty-state p { 
+        color: var(--text-secondary-color); 
+        margin-bottom: 1.5rem;
+        animation: fadeIn 1s ease-out 0.5s both;
+    }
+</style>
+
+<div class="dashboard-header animate-on-scroll">
+    <h1>Dashboard</h1>
+    <p>An overview of all your monitored API endpoints.</p>
+</div>
+
+{% if endpoints %}
+<div class="table-container animate-on-scroll">
+    <table class="endpoints-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Method</th>
+                <th>URL</th>
+                <th>Status</th>
+                <th>Response Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for endpoint in endpoints %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('endpoint_details', endpoint_id=endpoint.id) }}" class="endpoint-link">
+                        {{ endpoint['name'] }}
+                    </a>
+                </td>
+                <td><span class="method-tag method-{{ endpoint['method'] }}">{{ endpoint['method'] }}</span></td>
+                <td>{{ endpoint['url'] }}</td>
+                <td>
+                    {% if endpoint['is_success'] is not none %}
+                        {% if endpoint['is_success'] %}
+                        <div class="status-indicator status-success">
+                            <div class="status-dot"></div>
+                            <span>Success ({{ endpoint['status_code'] }})</span>
+                        </div>
+                        {% else %}
+                        <div class="status-indicator status-fail">
+                            <div class="status-dot"></div>
+                            <span>Fail ({{ endpoint['status_code'] }})</span>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="status-indicator status-unknown">
+                            <div class="status-dot"></div>
+                            <span>Not Tested</span>
+                        </div>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if endpoint['response_time'] is not none %}
+                        {{ endpoint['response_time'] }} ms
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state animate-on-scroll">
+    <h2>No Endpoints Found</h2>
+    <p>You haven't added any API endpoints to monitor yet.</p>
+    <a href="{{ url_for('add_endpoint') }}" class="btn btn-primary">Add Your First Endpoint</a>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tableRows = document.querySelectorAll('.endpoints-table tbody tr');
+    tableRows.forEach((row, index) => {
+        row.style.animationDelay = `${index * 0.1}s`;
+    });
+
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', () => {
+            row.style.transform = 'translateZ(15px) rotateX(3deg)';
+            row.style.boxShadow = '0 15px 30px rgba(0, 0, 0, 0.2)';
+        });
+        
+        row.addEventListener('mouseleave', () => {
+            row.style.transform = 'translateZ(0) rotateX(0deg)';
+            row.style.boxShadow = 'none';
+        });
+    });
+
+    window.addEventListener('scroll', () => {
+        const scrolled = window.pageYOffset;
+        const parallax = document.querySelector('.table-container');
+        if (parallax) {
+            const speed = scrolled * 0.1;
+            parallax.style.transform = `translateY(${speed}px)`;
+        }
+    });
+});
+</script>
+
+{% endblock %}

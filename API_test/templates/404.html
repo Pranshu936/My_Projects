@@ -1,0 +1,186 @@
+{% extends "layout.html" %}
+
+{% block title %}Page Not Found{% endblock %}
+
+{% block content %}
+<style>
+    /* Enhanced 404 page styling with 3D effects */
+    .error-container {
+        text-align: center;
+        padding: 4rem 0;
+        animation: fadeInUp 0.8s ease-out;
+        perspective: 1000px;
+    }
+
+    .error-number {
+        font-size: 8rem;
+        font-weight: 900;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, var(--primary-color), var(--danger-color), var(--success-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: float 6s ease-in-out infinite, textGlow 3s ease-in-out infinite alternate;
+        transform-style: preserve-3d;
+        text-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotateX(0deg); }
+        50% { transform: translateY(-20px) rotateX(10deg); }
+    }
+
+    @keyframes textGlow {
+        from { filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.3)); }
+        to { filter: drop-shadow(0 0 25px rgba(59, 130, 246, 0.8)); }
+    }
+
+    .error-message {
+        font-size: 1.25rem;
+        color: var(--text-secondary-color);
+        margin-bottom: 2rem;
+        animation: slideInUp 0.8s ease-out 0.3s both;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .error-button {
+        animation: slideInUp 0.8s ease-out 0.6s both;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .error-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .error-button:hover::before {
+        left: 100%;
+    }
+
+    /* Added floating geometric shapes for 404 page */
+    .error-shapes {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    .error-shape {
+        position: absolute;
+        opacity: 0.1;
+        animation: floatShape 20s infinite linear;
+    }
+
+    .error-shape:nth-child(1) {
+        top: 10%;
+        left: 10%;
+        width: 50px;
+        height: 50px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        animation-delay: 0s;
+    }
+
+    .error-shape:nth-child(2) {
+        top: 20%;
+        right: 15%;
+        width: 40px;
+        height: 40px;
+        background: var(--success-color);
+        transform: rotate(45deg);
+        animation-delay: -5s;
+    }
+
+    .error-shape:nth-child(3) {
+        bottom: 20%;
+        left: 20%;
+        width: 60px;
+        height: 60px;
+        background: var(--danger-color);
+        clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        animation-delay: -10s;
+    }
+
+    .error-shape:nth-child(4) {
+        bottom: 30%;
+        right: 10%;
+        width: 45px;
+        height: 45px;
+        background: var(--info-color);
+        border-radius: 50% 0;
+        animation-delay: -15s;
+    }
+
+    @keyframes floatShape {
+        0% { transform: translateY(0px) rotate(0deg); }
+        25% { transform: translateY(-20px) rotate(90deg); }
+        50% { transform: translateY(0px) rotate(180deg); }
+        75% { transform: translateY(-10px) rotate(270deg); }
+        100% { transform: translateY(0px) rotate(360deg); }
+    }
+
+    @keyframes slideInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div class="error-container">
+    <div class="error-shapes">
+        <div class="error-shape"></div>
+        <div class="error-shape"></div>
+        <div class="error-shape"></div>
+        <div class="error-shape"></div>
+    </div>
+    
+    <h1 class="error-number">404</h1>
+    <p class="error-message">
+        Oops! The page you're looking for seems to have vanished into the digital void. 
+        Don't worry, even the best APIs sometimes return unexpected results.
+    </p>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary error-button">
+        Return to Dashboard
+    </a>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const errorNumber = document.querySelector('.error-number');
+    
+    errorNumber.addEventListener('mouseenter', () => {
+        errorNumber.style.transform = 'scale(1.1) rotateY(15deg)';
+        errorNumber.style.textShadow = '0 0 50px rgba(59, 130, 246, 0.8)';
+    });
+    
+    errorNumber.addEventListener('mouseleave', () => {
+        errorNumber.style.transform = 'scale(1) rotateY(0deg)';
+        errorNumber.style.textShadow = '0 0 30px rgba(59, 130, 246, 0.5)';
+    });
+
+    setInterval(() => {
+        if (Math.random() < 0.1) { // 10% chance every interval
+            errorNumber.style.transform = 'scale(1.05) skew(2deg)';
+            errorNumber.style.filter = 'hue-rotate(180deg)';
+            
+            setTimeout(() => {
+                errorNumber.style.transform = 'scale(1) skew(0deg)';
+                errorNumber.style.filter = 'hue-rotate(0deg)';
+            }, 150);
+        }
+    }, 2000);
+});
+</script>
+
+{% endblock %}

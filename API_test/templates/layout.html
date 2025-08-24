@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark"> <!-- Default theme is dark -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}API Monitoring Dashboard{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- CSS Variables for Theming --- */
+        :root {
+            --bg-color: #f4f7f9;
+            --bg-secondary-color: #ffffff;
+            --text-color: #1a202c;
+            --text-secondary-color: #4a5568;
+            --border-color: #e2e8f0;
+            --primary-color: #3b82f6;
+            --primary-hover-color: #2563eb;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --info-color: #3b82f6;
+            --success-bg-color: rgba(16, 185, 129, 0.1);
+            --danger-bg-color: rgba(239, 68, 68, 0.1);
+            --info-bg-color: rgba(59, 130, 246, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0d1117;
+            --bg-secondary-color: #161b22;
+            --text-color: #c9d1d9;
+            --text-secondary-color: #8b949e;
+            --border-color: #30363d;
+            --primary-color: #58a6ff;
+            --primary-hover-color: #388bfd;
+            --success-color: #3fb950;
+            --danger-color: #f85149;
+            --info-color: #58a6ff;
+            --success-bg-color: rgba(63, 185, 80, 0.15);
+            --danger-bg-color: rgba(248, 81, 73, 0.15);
+            --info-bg-color: rgba(88, 166, 255, 0.15);
+            --shadow-color: rgba(0, 0, 0, 0.2);
+        }
+
+        /* --- General Styles & Reset --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Enhanced 3D background canvas with multiple layers */
+        #bg-canvas { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: -1; 
+            opacity: 0.6;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+        }
+
+        /* Added floating particles overlay */
+        .floating-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+
+        /* --- Main Layout --- */
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 2rem; 
+            position: relative; 
+            z-index: 1;
+            /* Added subtle parallax effect */
+            transform: translateZ(0);
+            will-change: transform;
+        }
+
+        /* --- Header & Navigation --- */
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 1.5rem 0; 
+            margin-bottom: 2rem; 
+            border-bottom: 1px solid var(--border-color);
+            /* Added glass morphism effect */
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: slideInDown 0.8s ease-out;
+        }
+
+        @keyframes slideInDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .logo { 
+            font-size: 1.5rem; 
+            font-weight: 700; 
+            text-decoration: none; 
+            color: var(--text-color);
+            /* Added glowing text effect */
+            text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+            text-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
+        }
+
+        .nav-actions { 
+            display: flex; 
+            align-items: center; 
+            gap: 1rem;
+            /* Added staggered animation */
+            animation: slideInRight 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(50px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* --- Theme Switcher --- */
+        .theme-switcher { 
+            background: none; 
+            border: 1px solid var(--border-color); 
+            border-radius: 50%; 
+            width: 40px; 
+            height: 40px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: var(--text-secondary-color); 
+            transition: all 0.3s ease;
+            /* Added 3D transform and glow effect */
+            transform-style: preserve-3d;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .theme-switcher::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.2), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .theme-switcher:hover { 
+            background-color: var(--bg-secondary-color);
+            transform: rotateY(180deg) scale(1.1);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .theme-switcher:hover::before {
+            transform: translateX(100%);
+        }
+
+        .theme-switcher svg { 
+            width: 20px; 
+            height: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .icon-sun, .icon-moon { display: none; }
+        [data-theme="dark"] .icon-sun { display: block; }
+        [data-theme="light"] .icon-moon { display: block; }
+
+        /* --- Buttons --- */
+        .btn { 
+            display: inline-block; 
+            padding: 0.75rem 1.5rem; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            text-decoration: none; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            /* Added 3D button effects */
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover { 
+            transform: translateY(-3px) rotateX(5deg);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:active {
+            transform: translateY(-1px) rotateX(2deg);
+        }
+
+        .btn-primary { 
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover-color)); 
+            color: var(--bg-secondary-color);
+        }
+
+        .btn-primary:hover { 
+            background: linear-gradient(135deg, var(--primary-hover-color), var(--primary-color));
+        }
+
+        /* --- Flash Messages --- */
+        .flash-messages { list-style: none; padding: 0; margin-bottom: 1.5rem; }
+        .flash-message { 
+            padding: 1rem; 
+            border-radius: 8px; 
+            margin-bottom: 1rem; 
+            animation: slideInLeft 0.6s ease-out;
+            /* Added glass morphism to flash messages */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .flash-message::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: currentColor;
+            animation: expandHeight 0.6s ease-out 0.3s both;
+        }
+
+        @keyframes slideInLeft {
+            from { transform: translateX(-50px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes expandHeight {
+            from { height: 0; }
+            to { height: 100%; }
+        }
+
+        .flash-success { background-color: var(--success-bg-color); color: var(--success-color); border: 1px solid var(--success-color); }
+        .flash-danger { background-color: var(--danger-bg-color); color: var(--danger-color); border: 1px solid var(--danger-color); }
+        .flash-info { background-color: var(--info-bg-color); color: var(--info-color); border: 1px solid var(--info-color); }
+
+        /* --- Main Content Area --- */
+        main { 
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px; 
+            padding: 2rem; 
+            /* Enhanced glass morphism and 3D effects */
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+            position: relative;
+            overflow: hidden;
+        }
+
+        main::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), transparent);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        /* --- Footer --- */
+        footer { 
+            text-align: center; 
+            margin-top: 3rem; 
+            padding: 1.5rem; 
+            color: var(--text-secondary-color); 
+            font-size: 0.9rem;
+            /* Added fade in animation */
+            animation: fadeIn 1s ease-out 0.8s both;
+        }
+
+        /* Added scroll-triggered animations */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease-out;
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Added pulse animation for interactive elements */
+        .pulse-on-hover {
+            transition: all 0.3s ease;
+        }
+
+        .pulse-on-hover:hover {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    <!-- Added floating particles container -->
+    <div class="floating-particles" id="particles-container"></div>
+
+    <div class="container">
+        <header>
+            <a href="{{ url_for('dashboard') }}" class="logo pulse-on-hover">API Monitor</a>
+            <div class="nav-actions">
+                <button class="theme-switcher" id="theme-toggle" title="Toggle theme">
+                    <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>
+                    <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>
+                </button>
+                <a href="{{ url_for('add_endpoint') }}" class="btn btn-primary">Add Endpoint</a>
+            </div>
+        </header>
+
+        <!-- Flash Message Display Area -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                {% for category, message in messages %}
+                    <li class="flash-message flash-{{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer>
+            &copy; 2025 API Monitoring Dashboard. All rights reserved.
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="module">
+        // --- Theme Switcher Logic ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const htmlEl = document.documentElement;
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        htmlEl.setAttribute('data-theme', savedTheme);
+        themeToggle.addEventListener('click', () => {
+            const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            htmlEl.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+
+        let scene, camera, renderer, stars, geometricShapes, nebula;
+        let mouseX = 0, mouseY = 0;
+        
+        function init3D() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.z = 500;
+            
+            const canvas = document.getElementById('bg-canvas');
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setClearColor(0x000000, 0);
+
+            // Enhanced starfield with multiple layers
+            createStarfield();
+            createGeometricShapes();
+            createNebula();
+            
+            animate();
+        }
+
+        function createStarfield() {
+            const starGeometry = new THREE.BufferGeometry();
+            const starCount = 8000;
+            const positions = new Float32Array(starCount * 3);
+            const colors = new Float32Array(starCount * 3);
+            const sizes = new Float32Array(starCount);
+
+            for (let i = 0; i < starCount; i++) {
+                const i3 = i * 3;
+                positions[i3] = (Math.random() - 0.5) * 2000;
+                positions[i3 + 1] = (Math.random() - 0.5) * 2000;
+                positions[i3 + 2] = (Math.random() - 0.5) * 2000;
+
+                // Varied star colors
+                const color = new THREE.Color();
+                color.setHSL(Math.random() * 0.2 + 0.5, 0.55, Math.random() * 0.25 + 0.55);
+                colors[i3] = color.r;
+                colors[i3 + 1] = color.g;
+                colors[i3 + 2] = color.b;
+
+                sizes[i] = Math.random() * 2 + 0.5;
+            }
+
+            starGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            starGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            starGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+            const starMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 }
+                },
+                vertexShader: `
+                    attribute float size;
+                    attribute vec3 color;
+                    varying vec3 vColor;
+                    uniform float time;
+                    void main() {
+                        vColor = color;
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                        gl_PointSize = size * (300.0 / -mvPosition.z) * (1.0 + 0.3 * sin(time + position.x * 0.01));
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vColor;
+                    void main() {
+                        float r = distance(gl_PointCoord, vec2(0.5, 0.5));
+                        if (r > 0.5) discard;
+                        float alpha = 1.0 - smoothstep(0.0, 0.5, r);
+                        gl_FragColor = vec4(vColor, alpha);
+                    }
+                `,
+                transparent: true,
+                vertexColors: true
+            });
+
+            stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
+        }
+
+        function createGeometricShapes() {
+            geometricShapes = new THREE.Group();
+            
+            // Create floating geometric shapes
+            const geometries = [
+                new THREE.TetrahedronGeometry(20, 0),
+                new THREE.OctahedronGeometry(15, 0),
+                new THREE.IcosahedronGeometry(18, 0),
+                new THREE.DodecahedronGeometry(16, 0)
+            ];
+
+            for (let i = 0; i < 15; i++) {
+                const geometry = geometries[Math.floor(Math.random() * geometries.length)];
+                const material = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color().setHSL(Math.random() * 0.3 + 0.5, 0.7, 0.5),
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(
+                    (Math.random() - 0.5) * 1500,
+                    (Math.random() - 0.5) * 1500,
+                    (Math.random() - 0.5) * 1000
+                );
+                mesh.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                );
+                
+                geometricShapes.add(mesh);
+            }
+            
+            scene.add(geometricShapes);
+        }
+
+        function createNebula() {
+            const nebulaGeometry = new THREE.PlaneGeometry(2000, 2000, 32, 32);
+            const nebulaMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 },
+                    resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform float time;
+                    uniform vec2 resolution;
+                    varying vec2 vUv;
+                    
+                    float noise(vec2 p) {
+                        return sin(p.x * 10.0) * sin(p.y * 10.0);
+                    }
+                    
+                    void main() {
+                        vec2 uv = vUv;
+                        float n = noise(uv + time * 0.1) * 0.5 + 0.5;
+                        vec3 color = mix(vec3(0.1, 0.2, 0.8), vec3(0.8, 0.2, 0.8), n);
+                        gl_FragColor = vec4(color, 0.1);
+                    }
+                `,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            
+            nebula = new THREE.Mesh(nebulaGeometry, nebulaMaterial);
+            nebula.position.z = -800;
+            scene.add(nebula);
+        }
+
+        function animate() {
+            const time = Date.now() * 0.001;
+            
+            // Update star material
+            if (stars && stars.material.uniforms) {
+                stars.material.uniforms.time.value = time;
+            }
+            
+            // Rotate stars based on mouse position
+            if (stars) {
+                stars.rotation.x += 0.0005;
+                stars.rotation.y += 0.0002;
+                stars.position.x += (mouseX * 0.1 - stars.position.x) * 0.02;
+                stars.position.y += (-mouseY * 0.1 - stars.position.y) * 0.02;
+            }
+            
+            // Animate geometric shapes
+            if (geometricShapes) {
+                geometricShapes.children.forEach((shape, index) => {
+                    shape.rotation.x += 0.01 + index * 0.001;
+                    shape.rotation.y += 0.005 + index * 0.0005;
+                    shape.position.y += Math.sin(time + index) * 0.5;
+                });
+            }
+            
+            // Update nebula
+            if (nebula && nebula.material.uniforms) {
+                nebula.material.uniforms.time.value = time;
+            }
+            
+            // Camera movement
+            camera.position.x += (mouseX * 0.05 - camera.position.x) * 0.02;
+            camera.position.y += (-mouseY * 0.05 - camera.position.y) * 0.02;
+            camera.lookAt(scene.position);
+            
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        // Mouse interaction
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - window.innerWidth / 2) / 100;
+            mouseY = (event.clientY - window.innerHeight / 2) / 100;
+        });
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        window.addEventListener('resize', onWindowResize, false);
+
+        function createFloatingParticles() {
+            const container = document.getElementById('particles-container');
+            
+            function createParticle() {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 4 + 2;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                
+                container.appendChild(particle);
+                
+                setTimeout(() => {
+                    particle.remove();
+                }, 25000);
+            }
+            
+            // Create initial particles
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => createParticle(), i * 200);
+            }
+            
+            // Continuously create new particles
+            setInterval(createParticle, 1000);
+        }
+
+        function initScrollAnimations() {
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.animate-on-scroll').forEach(el => {
+                observer.observe(el);
+            });
+        }
+
+        // Initialize everything
+        init3D();
+        createFloatingParticles();
+        initScrollAnimations();
+    </script>
+</body>
+</html>
