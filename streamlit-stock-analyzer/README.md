@@ -1,21 +1,16 @@
-# 📈 Elite Trading Analyzer
+# 📈 Trading Analyzer
 
 > **Advanced trading analysis with EMA/RSI strategy, AI insights, and professional charting**
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)](https://streamlit.io)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](#contributing)
+
 
 ![Demo](video/0625.gif)
 
 ## 🌟 Overview
 
-The **Elite Trading Analyzer** is a sophisticated trading tool built with Streamlit that combines technical analysis, sentiment analysis, and AI-powered insights. Designed for both global markets and Indian stock indices, it provides professional-grade analysis with real-time data, advanced charting, and intelligent trading recommendations.
+The **Trading Analyzer** is a sophisticated trading tool built with Streamlit that combines technical analysis, sentiment analysis, and AI-powered insights. Designed for both global markets and Indian stock indices, it provides professional-grade analysis with real-time data, advanced charting, and intelligent trading recommendations.
 
-## 🌟 **Please ⭐ STAR this repository if you find it helpful!**
-## 🔄 **Don't forget to FORK this project to contribute!**
-## 👍 **LIKE and APPRECIATE this work!**
+
 
 ---
 
@@ -371,23 +366,7 @@ The core strategy can be customized by modifying:
 
 ---
 
-## 🚀 Future Enhancements
 
-### **Planned Features**
-- **Backtesting Engine**: Historical strategy performance
-- **Portfolio Analysis**: Multi-asset portfolio tracking
-- **Options Analysis**: Derivatives trading signals
-- **Alerts System**: Email/SMS notifications for signals
-- **Mobile App**: Native mobile application
-- **Machine Learning**: Enhanced prediction models
-
-### **Technical Improvements**
-- **WebSocket Integration**: Real-time streaming data
-- **Database Integration**: Historical data storage
-- **API Rate Optimization**: More efficient data usage
-- **Performance Caching**: Faster repeated analysis
-
----
 
 ## 🏆 What Makes This Special
 
@@ -468,12 +447,6 @@ Help others discover this tool by starring the repository!
 
 ---
 
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
 ## 🙏 Acknowledgments
 
 - **yfinance**: Reliable financial data from Yahoo Finance
@@ -485,33 +458,13 @@ This project is open source and available under the [MIT License](LICENSE).
 - **FinBERT**: Financial sentiment analysis model
 - **Google**: Sheets API for data logging
 
----
 
-## ⚠️ Disclaimer
 
-**This tool is for educational and informational purposes only. It does not constitute financial advice. Always:**
-- Do your own research before making trading decisions
-- Consult with qualified financial advisors
-- Practice proper risk management
-- Never invest more than you can afford to lose
-- Understand that past performance doesn't guarantee future results
 
-**Trading and investing involve significant risk of loss.**
-
----
-
-**Built with ❤️ for the Global Trading Community**
-
-## 🚀 **Don't Forget To:**
-- ⭐ **STAR** this repository if you find it useful
-- 🔄 **FORK** and contribute improvements  
-- 👍 **LIKE** and share with fellow traders
-- 📢 **SHARE** on social media and trading communities
-- 💬 **PROVIDE** feedback and suggestions
 - 🐛 **REPORT** bugs to help improve the tool
 
 **Happy Trading! 📈💰**
 
 ---
 
-*Elite Trading Analyzer - Where Technology Meets Trading Excellence*
+*Trading Analyzer - Where Technology Meets Trading Excellence*
